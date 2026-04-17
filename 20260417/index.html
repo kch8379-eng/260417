@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 보고서 생성기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d0f;
+            --surface-color: #1a1a1f;
+            --surface-color-hover: #232329;
+            --text-primary: #e6e6e6;
+            --text-secondary: #999999;
+            --accent-gold: #d4af37;
+            --accent-gold-hover: #e5c158;
+            --border-color: #333333;
+            --error-color: #ff4d4d;
+            --success-color: #4cd964;
+            
+            --font-sans: 'Inter', sans-serif;
+            --font-serif: 'Merriweather', serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            color: var(--accent-gold);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .step-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.3s;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .step-number {
+            background-color: var(--accent-gold);
+            color: var(--bg-color);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .api-key-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .api-key-input-group {
+            position: relative;
+            flex: 1;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        button {
+            background-color: var(--accent-gold);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--accent-gold-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--surface-color-hover);
+            border-color: var(--text-secondary);
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone.dragover {
+            border-color: var(--accent-gold);
+            background-color: rgba(212, 175, 55, 0.05);
+        }
+
+        .drop-zone-text {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .drop-zone-icon {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--bg-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Result Section */
+        #resultSection {
+            margin-top: 40px;
+        }
+
+        .result-content {
+            background-color: var(--bg-color);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-family: var(--font-serif);
+            white-space: pre-wrap;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent-gold);
+            color: var(--bg-color);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Status Bar */
+        #statusBar {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .status-error {
+            background-color: rgba(255, 77, 77, 0.1);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .status-loading {
+            background-color: rgba(212, 175, 55, 0.1);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>AI 보고서 생성기</h1>
+        <p class="subtitle">기존 양식을 학습하여 동일한 형식의 새 보고서를 작성합니다.</p>
+    </header>
+
+    <!-- Step 1: API Key -->
+    <div class="step-container">
+        <div class="step-header">
+            <div class="step-number">1</div>
+            <h2 class="step-title">Gemini API 설정</h2>
+        </div>
+        <div class="api-key-wrapper">
+            <div class="api-key-input-group">
+                <input type="password" id="apiKeyInput" placeholder="당신의 Gemini API Key를 입력하세요">
+                <span class="toggle-password" id="toggleApiBtn" onclick="togglePassword()">👁️</span>
+            </div>
+            <button id="saveKeyBtn" onclick="saveApiKey()">저장</button>
+        </div>
+        <p class="info-text">🔒 API Key는 브라우저 내부에만 저장되며 절대 서버로 전송되지 않습니다.</p>
+    </div>
+
+    <!-- Step 2: Template Upload -->
+    <div class="step-container">
+        <div class="step-header">
+            <div class="step-number">2</div>
+            <h2 class="step-title">보고서 양식 등록</h2>
+        </div>
+        
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="drop-zone-icon">📄</div>
+            <div class="drop-zone-text">여기를 클릭하거나 파일을 드래그하여 양식을 업로드하세요</div>
+            <p class="info-text" style="justify-content: center; margin-top: 0;">지원 형식: .txt, .md, .html, 이미지(jpg, png, webp)</p>
+            <input type="file" id="fileInput" class="hidden" accept=".txt,.md,.html,image/*">
+        </div>
+
+        <div class="form-group">
+            <label for="templateTextarea">또는 양식 내용 직접 입력/확인:</label>
+            <textarea id="templateTextarea" placeholder="업로드된 파일 내용이 여기에 표시됩니다. 직접 텍스트를 붙여넣어도 좋습니다."></textarea>
+        </div>
+        <img id="templatePreview" class="hidden result-image" alt="업로드된 템플릿 이미지 프리뷰">
+    </div>
+
+    <!-- Step 3: New Report Details -->
+    <div class="step-container">
+        <div class="step-header">
+            <div class="step-number">3</div>
+            <h2 class="step-title">새 보고서 정보</h2>
+        </div>
+        
+        <div class="form-group">
+            <label for="reportTitle">보고서 제목 / 주제 (필수)</label>
+            <input type="text" id="reportTitle" placeholder="예: 2024년 3분기 디지털 마케팅 성과 보고">
+        </div>
+        
+        <div class="form-group">
+            <label for="reportAudience">대상 독자</label>
+            <input type="text" id="reportAudience" placeholder="예: 경영진, 외부 투자자, 팀 내부 (선택사항)">
+        </div>
+
+        <div class="form-group">
+            <label for="reportContent">핵심 내용 / 데이터 (필수)</label>
+            <textarea id="reportContent" placeholder="새로운 보고서에 들어갈 핵심 사실, 데이터, 주요 메시지를 자세히 적어주세요."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="imagePrompt">타이틀 이미지 생성 프롬프트 (선택)</label>
+            <input type="text" id="imagePrompt" placeholder="비워두면 텍스트로만 보고서를 생성합니다. 예: 미래지향적인 도시의 야경">
+        </div>
+    </div>
+
+    <button id="generateBtn" class="generate-btn" onclick="startGeneration()">
+        <span>보고서 생성 시작</span>
+    </button>
+    
+    <div id="statusBar" class="hidden"></div>
+
+    <!-- Result Section -->
+    <div id="resultSection" class="hidden">
+        <div class="step-header">
+            <div class="step-number">✓</div>
+            <h2 class="step-title">생성된 보고서</h2>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="copyToClipboard()">내용 복사</button>
+            <button onclick="downloadReport()" class="btn-outline">.txt 다운로드</button>
+            <button onclick="resetApp()" class="btn-outline">다시 만들기</button>
+        </div>
+
+        <div id="generatedContent" class="result-content"></div>
+        <img id="generatedImage" class="hidden result-image" alt="생성된 보고서 이미지">
+    </div>
+
+</div>
+
+<div id="toast" class="toast">복사되었습니다!</div>
+
+<script>
+    // ── Section 1: Global Variables & Initialization ──
+    let templateContent = "";
+    let templateImageData = null; // { mimeType, data } base64 저장용
+    let generatedText = "";
+    
+    window.onload = () => {
+        const savedKey = localStorage.getItem('gemini_api_key');
+        if (savedKey) {
+            document.getElementById('apiKeyInput').value = savedKey;
+        }
+        setupDragAndDrop();
+        setupFileInput();
+    };
+
+    // ── Section 2: API Key Management ──
+    function togglePassword() {
+        const input = document.getElementById('apiKeyInput');
+        const btn = document.getElementById('toggleApiBtn');
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.textContent = '🙈';
+        } else {
+            input.type = 'password';
+            btn.textContent = '👁️';
+        }
+    }
+
+    function saveApiKey() {
+        const key = document.getElementById('apiKeyInput').value.trim();
+        if (!key) {
+            showToast('API Key를 입력해주세요.');
+            return;
+        }
+        localStorage.setItem('gemini_api_key', key);
+        showToast('API Key가 저장되었습니다.');
+    }
+
+    function getApiKey() {
+        return document.getElementById('apiKeyInput').value.trim() || localStorage.getItem('gemini_api_key');
+    }
+
+    // ── Section 3: File Upload Handling ──
+    function setupDragAndDrop() {
+        const dropZone = document.getElementById('dropZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+    }
+
+    function setupFileInput() {
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+    }
+
+    function handleFiles(files) {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+
+        const isImage = file.type.startsWith('image/');
+        
+        if (isImage) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Data = e.target.result.split(',')[1];
+                templateImageData = {
+                    mimeType: file.type,
+                    data: base64Data
+                };
+                
+                // Show preview
+                const preview = document.getElementById('templatePreview');
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                
+                // Set text area
+                const textarea = document.getElementById('templateTextarea');
+                textarea.value = `[이미지 템플릿 로드됨: ${file.name}]\n이 아래에 이미지에 대한 부가적인 설명이나 레이아웃 지시사항을 추가할 수 있습니다.`;
+                templateContent = "IMAGE_TEMPLATE";
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Text files
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('templateTextarea').value = e.target.result;
+                templateImageData = null;
+                document.getElementById('templatePreview').classList.add('hidden');
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    // ── Section 4: Gemini API Calls ──
+    async function callGemini(model, payload, apiKey) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    async function generateText(apiKey, combinedPrompt) {
+        let contents = [];
+        
+        // 이미지 템플릿 포함 여부
+        if (templateImageData) {
+            contents.push({
+                role: "user",
+                parts: [
+                    { inlineData: { mimeType: templateImageData.mimeType, data: templateImageData.data } },
+                    { text: combinedPrompt }
+                ]
+            });
+        } else {
+            contents.push({
+                role: "user",
+                parts: [{ text: combinedPrompt }]
+            });
+        }
+
+        const payload = {
+            systemInstruction: {
+                parts: [{ text: "당신은 제공된 보고서 양식의 구조, 섹션, 문체, 형식을 분석하여 기존 틀을 완벽하게 유지하면서, 사용자의 새로운 데이터를 바탕으로 동일한 형식의 새 보고서를 작성하는 전문가입니다." }]
+            },
+            contents: contents,
+            generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 8192
+            }
+        };
+
+        const data = await callGemini('gemini-3.1-flash-lite-preview', payload, apiKey);
+        
+        if (data.candidates && data.candidates[0].content.parts.length > 0) {
+            return data.candidates[0].content.parts[0].text;
+        }
+        throw new Error("텍스트 생성 응답 형식이 올바르지 않습니다.");
+    }
+
+    async function generateImage(apiKey, prompt) {
+        const payload = {
+            contents: [{
+                role: "user",
+                parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+                responseModalities: ["IMAGE"]
+            }
+        };
+
+        const data = await callGemini('gemini-3.1-flash-image-preview', payload, apiKey);
+        
+        if (data.candidates && data.candidates[0].content.parts.length > 0) {
+            const part = data.candidates[0].content.parts.find(p => p.inlineData && p.inlineData.mimeType.startsWith('image/'));
+            if (part && part.inlineData) {
+                return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            }
+        }
+        throw new Error("이미지 데이터가 응답에 포함되지 않았습니다.");
+    }
+
+    // ── Section 5: Main Application Logic ──
+    async function startGeneration() {
+        const apiKey = getApiKey();
+        const textAreaTemplate = document.getElementById('templateTextarea').value.trim();
+        const title = document.getElementById('reportTitle').value.trim();
+        const audience = document.getElementById('reportAudience').value.trim();
+        const content = document.getElementById('reportContent').value.trim();
+        const imagePrompt = document.getElementById('imagePrompt').value.trim();
+
+        // Validation
+        if (!apiKey) return showError("API Key를 입력해주세요.");
+        if (!textAreaTemplate && !templateImageData) return showError("보고서 양식을 업로드하거나 입력해주세요.");
+        if (!title) return showError("보고서 제목을 입력해주세요.");
+        if (!content) return showError("보고서 핵심 내용을 입력해주세요.");
+
+        const btn = document.getElementById('generateBtn');
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div><span>보고서 구조를 분석하고 작성하는 중...</span>`;
+        hideStatus();
+        document.getElementById('resultSection').classList.add('hidden');
+        document.getElementById('generatedImage').classList.add('hidden');
+
+        try {
+            // Prompt construction
+            let userPromptText = `다음 주어진 양식을 완벽히 모방하여 새로운 내용으로 보고서를 작성해주세요.\n\n`;
+            
+            if (templateImageData) {
+                userPromptText += `[이미지 형태의 양식이 첨부되었습니다.]\n`;
+                if (!textAreaTemplate.includes("IMAGE_TEMPLATE")) {
+                     userPromptText += `추가 양식 지시사항: ${textAreaTemplate}\n\n`;
+                }
+            } else {
+                userPromptText += `--- 보고서 양식 템플릿 ---\n${textAreaTemplate}\n----------------------\n\n`;
+            }
+
+            userPromptText += `[새 보고서 정보]\n- 제목: ${title}\n`;
+            if (audience) userPromptText += `- 대상 독자: ${audience}\n`;
+            userPromptText += `- 핵심 내용 및 데이터:\n${content}\n\n`;
+            userPromptText += `지시사항: 마크다운 형식을 활용하되, 본래 양식의 헤딩 크기나 목차 구조를 그대로 따를 것.`;
+
+            // Step 1: Text
+            generatedText = await generateText(apiKey, userPromptText);
+            document.getElementById('generatedContent').textContent = generatedText;
+
+            // Step 2: Image
+            let finalImagePrompt = imagePrompt;
+            if (!finalImagePrompt) {
+                finalImagePrompt = `${title}의 핵심 주제를 잘 나타내는, 보고서 표지에 어울리는 전문적이고 고급스러운 일러스트레이션 혹은 그래픽 디자인`;
+            }
+
+            btn.innerHTML = `<div class="spinner"></div><span>보고서 이미지를 생성하는 중...</span>`;
+            try {
+                const imgDataUrl = await generateImage(apiKey, finalImagePrompt);
+                const imgEl = document.getElementById('generatedImage');
+                imgEl.src = imgDataUrl;
+                imgEl.classList.remove('hidden');
+            } catch (imgErr) {
+                console.warn("이미지 생성 실패, 텍스트 반환으로 진행:", imgErr);
+                // 이미지 실패시 텍스트 결과만 보여주기 위해 에러 무시
+            }
+
+            // Success UI
+            document.getElementById('resultSection').classList.remove('hidden');
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+
+        } catch (err) {
+            showError("오류가 발생했습니다: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<span>보고서 생성 시작</span>`;
+        }
+    }
+
+    // ── Section 6: Utilities & UI Helpers ──
+    function showError(msg) {
+        const bar = document.getElementById('statusBar');
+        bar.className = 'status-error';
+        bar.textContent = msg;
+        bar.classList.remove('hidden');
+    }
+
+    function showStatus(msg) {
+        const bar = document.getElementById('statusBar');
+        bar.className = 'status-loading';
+        bar.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; gap:8px;"><div class="spinner" style="border-top-color:var(--accent-gold); border-color:rgba(212, 175, 55, 0.2)"></div>${msg}</div>`;
+        bar.classList.remove('hidden');
+    }
+
+    function hideStatus() {
+        document.getElementById('statusBar').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    async function copyToClipboard() {
+        try {
+            await navigator.clipboard.writeText(generatedText);
+            showToast('보고서 내용이 복사되었습니다.');
+        } catch (err) {
+            showError('복사 실패: ' + err);
+        }
+    }
+
+    function downloadReport() {
+        const blob = new Blob([generatedText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const title = document.getElementById('reportTitle').value.trim() || 'report';
+        a.download = `보고서_${title}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function resetApp() {
+        document.getElementById('resultSection').classList.add('hidden');
+        document.getElementById('reportContent').value = '';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+</body>
+</html>
